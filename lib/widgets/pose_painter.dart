@@ -4,12 +4,31 @@ import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'coordinates_translator.dart';
 
+class EMA {
+  //TODO: EMA kullanımı - Exponential Moving Average - Üstel hareket ortalaması
+
+  // kameradan gelen her framedeki landmark koordinatları çok oynuyor
+  // eğer her frame'i direkt çizersem çok titreme oluyor
+  // çözüm: her landmark için ema uygulayıp küçük değişiklikler yapıyoruz
+
+  double value;
+  final double alpha;
+  EMA({required this.value, this.alpha = 0.1});
+
+  double update(double newValue) {
+    value = alpha * newValue + (1 - alpha) * value;
+    return value;
+    // update(newValue)  yeni değer geldiğinde EMA’yı günceller ve yumuşatılmış sonucu döner
+  }
+}
+
 class PosePainter extends CustomPainter {
   PosePainter(
     this.poses,
     this.imageSize,
     this.rotation,
     this.cameraLensDirection,
+    this._emaMap,
   );
 
   final List<Pose> poses;
@@ -17,10 +36,20 @@ class PosePainter extends CustomPainter {
   final InputImageRotation rotation;
   final CameraLensDirection cameraLensDirection;
 
+  /// key: landmark type + axis (x/y), value: EMA objesi
+  final Map<String, EMA> _emaMap;
+
+  double _getEMA(PoseLandmarkType type, double coord, String axis) {
+    final key = "${type.name}_$axis";
+    if (!_emaMap.containsKey(key)) {
+      _emaMap[key] = EMA(value: coord);
+    }
+    return _emaMap[key]!.update(coord);
+  }
+
   @override
   void paint(Canvas canvas, Size size) {
     for (final pose in poses) {
-      // --- Yardımcı: üç nokta arasındaki açıyı hesaplayıp iki çizgiyi çizer ---
       void paintJointLines(
         PoseLandmarkType pointA,
         PoseLandmarkType pointB,
@@ -44,23 +73,65 @@ class PosePainter extends CustomPainter {
           ..strokeWidth = 3
           ..color = isValid ? Colors.green : Colors.red;
 
-        // Her zaman hem üst hem alt çizgi çizilir:
+        // EMA ile smooth hesap
         final aOffset = Offset(
-          translateX(a.x, size, imageSize, rotation, cameraLensDirection),
-          translateY(a.y, size, imageSize, rotation, cameraLensDirection),
+          translateX(
+            _getEMA(pointA, a.x, "x"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
+
+          //Landmark koordinatlarını alıyoruz (örneğin leftElbow.x)
+
+          // _getEMA ile EMA’yı uygula  titremeyi azalt
+
+          // Çizgiyi yumuşak koordinatla çiz
+          translateY(
+            _getEMA(pointA, a.y, "y"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
         );
         final bOffset = Offset(
-          translateX(b.x, size, imageSize, rotation, cameraLensDirection),
-          translateY(b.y, size, imageSize, rotation, cameraLensDirection),
+          translateX(
+            _getEMA(pointB, b.x, "x"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
+          translateY(
+            _getEMA(pointB, b.y, "y"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
         );
         final cOffset = Offset(
-          translateX(c.x, size, imageSize, rotation, cameraLensDirection),
-          translateY(c.y, size, imageSize, rotation, cameraLensDirection),
+          translateX(
+            _getEMA(pointC, c.x, "x"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
+          translateY(
+            _getEMA(pointC, c.y, "y"),
+            size,
+            imageSize,
+            rotation,
+            cameraLensDirection,
+          ),
         );
 
-        // 🔹 A-B (örneğin omuz–dirsek)
+        // Omuz–Dirsek
         canvas.drawLine(aOffset, bOffset, paint);
-        // 🔹 B-C (örneğin dirsek–bilek)
+        // Dirsek–Bilek
         canvas.drawLine(bOffset, cOffset, paint);
       }
 
@@ -71,7 +142,6 @@ class PosePainter extends CustomPainter {
         PoseLandmarkType.leftWrist,
         defaultPose.leftElbowAngle,
       );
-
       paintJointLines(
         PoseLandmarkType.rightShoulder,
         PoseLandmarkType.rightElbow,
@@ -86,7 +156,6 @@ class PosePainter extends CustomPainter {
         PoseLandmarkType.leftAnkle,
         defaultPose.leftKneeAngle,
       );
-
       paintJointLines(
         PoseLandmarkType.rightHip,
         PoseLandmarkType.rightKnee,
@@ -97,7 +166,5 @@ class PosePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant PosePainter oldDelegate) {
-    return oldDelegate.imageSize != imageSize || oldDelegate.poses != poses;
-  }
+  bool shouldRepaint(covariant PosePainter oldDelegate) => true;
 }

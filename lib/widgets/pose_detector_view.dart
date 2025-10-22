@@ -23,6 +23,9 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
   String? _text;
   var _cameraLensDirection = CameraLensDirection.back;
 
+  // EMA değerleri için map
+  final Map<String, EMA> _emaMap = {};
+
   @override
   void dispose() async {
     _canProcess = false;
@@ -49,7 +52,9 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
     setState(() {
       _text = '';
     });
+
     final poses = await _poseDetector.processImage(inputImage);
+
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
       final painter = PosePainter(
@@ -57,16 +62,15 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         inputImage.metadata!.size,
         inputImage.metadata!.rotation,
         _cameraLensDirection,
+        _emaMap, // EMA map’i burada geçiriyoruz
       );
       _customPaint = CustomPaint(painter: painter);
     } else {
       _text = 'Poses found: ${poses.length}\n\n';
-      // TODO: set _customPaint to draw landmarks on top of image
       _customPaint = null;
     }
+
     _isBusy = false;
-    if (mounted) {
-      setState(() {});
-    }
+    if (mounted) setState(() {});
   }
 }
