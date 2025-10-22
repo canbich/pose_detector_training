@@ -1,6 +1,6 @@
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui';
-
 import 'package:camera/camera.dart';
 import 'package:google_mlkit_commons/google_mlkit_commons.dart';
 
@@ -49,4 +49,14 @@ double translateY(
     case InputImageRotation.rotation180deg:
       return y * canvasSize.height / imageSize.height;
   }
+}
+
+double calculateAngle(Offset a, Offset b, Offset c) {
+  final ab = Offset(b.dx - a.dx, b.dy - a.dy);
+  final cb = Offset(b.dx - c.dx, b.dy - c.dy);
+
+  final dot = (ab.dx * cb.dx + ab.dy * cb.dy);
+  final cross = (ab.dx * cb.dy - ab.dy * cb.dx);
+
+  return (atan2(cross, dot) * 180 / pi).abs();
 }

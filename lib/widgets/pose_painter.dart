@@ -1,7 +1,7 @@
+import 'package:approx_pilates_demo/pose_references/pose_reference.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
-
 import 'coordinates_translator.dart';
 
 class PosePainter extends CustomPainter {
@@ -19,52 +19,35 @@ class PosePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
+    final defaultPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..color = Colors.green;
 
-    final leftPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..color = Colors.yellow;
-
-    final rightPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..color = Colors.blueAccent;
-
     for (final pose in poses) {
-      pose.landmarks.forEach((_, landmark) {
-        canvas.drawCircle(
-          Offset(
-            translateX(
-              landmark.x,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-            translateY(
-              landmark.y,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-          ),
-          1,
-          paint,
-        );
-      });
-
-      void paintLine(
+      void paintLineValidated(
         PoseLandmarkType type1,
         PoseLandmarkType type2,
-        Paint paintType,
+        PoseLandmarkType type3,
+        double referenceAngle,
       ) {
-        final PoseLandmark joint1 = pose.landmarks[type1]!;
-        final PoseLandmark joint2 = pose.landmarks[type2]!;
+        final joint1 = pose.landmarks[type1]!;
+        final joint2 = pose.landmarks[type2]!;
+        final joint3 = pose.landmarks[type3]!;
+
+        final angle = calculateAngle(
+          Offset(joint1.x, joint1.y),
+          Offset(joint2.x, joint2.y),
+          Offset(joint3.x, joint3.y),
+        );
+
+        final paint = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 3.0
+          ..color = (angle - referenceAngle).abs() < 15
+              ? Colors.green
+              : Colors.red;
+
         canvas.drawLine(
           Offset(
             translateX(
@@ -98,60 +81,37 @@ class PosePainter extends CustomPainter {
               cameraLensDirection,
             ),
           ),
-          paintType,
+          paint,
         );
       }
 
-      //Draw arms
-      paintLine(
+      // Sol kol
+      paintLineValidated(
         PoseLandmarkType.leftShoulder,
-        PoseLandmarkType.leftElbow,
-        leftPaint,
-      );
-      paintLine(
         PoseLandmarkType.leftElbow,
         PoseLandmarkType.leftWrist,
-        leftPaint,
+        defaultPose.leftElbowAngle,
       );
-      paintLine(
+      // Sağ kol
+      paintLineValidated(
         PoseLandmarkType.rightShoulder,
-        PoseLandmarkType.rightElbow,
-        rightPaint,
-      );
-      paintLine(
         PoseLandmarkType.rightElbow,
         PoseLandmarkType.rightWrist,
-        rightPaint,
+        defaultPose.rightElbowAngle,
       );
-
-      //Draw Body
-      paintLine(
-        PoseLandmarkType.leftShoulder,
+      // Sol bacak
+      paintLineValidated(
         PoseLandmarkType.leftHip,
-        leftPaint,
-      );
-      paintLine(
-        PoseLandmarkType.rightShoulder,
-        PoseLandmarkType.rightHip,
-        rightPaint,
-      );
-
-      //Draw legs
-      paintLine(PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, leftPaint);
-      paintLine(
         PoseLandmarkType.leftKnee,
         PoseLandmarkType.leftAnkle,
-        leftPaint,
+        defaultPose.leftKneeAngle,
       );
-      paintLine(
+      // Sağ bacak
+      paintLineValidated(
         PoseLandmarkType.rightHip,
         PoseLandmarkType.rightKnee,
-        rightPaint,
-      );
-      paintLine(
-        PoseLandmarkType.rightKnee,
         PoseLandmarkType.rightAnkle,
-        rightPaint,
+        defaultPose.rightKneeAngle,
       );
     }
   }
