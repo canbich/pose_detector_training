@@ -19,95 +19,75 @@ class PosePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final defaultPaint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
-      ..color = Colors.green;
-
     for (final pose in poses) {
-      void paintLineValidated(
-        PoseLandmarkType type1,
-        PoseLandmarkType type2,
-        PoseLandmarkType type3,
-        double referenceAngle,
+      // --- Yardımcı: üç nokta arasındaki açıyı hesaplayıp iki çizgiyi çizer ---
+      void paintJointLines(
+        PoseLandmarkType pointA,
+        PoseLandmarkType pointB,
+        PoseLandmarkType pointC,
+        double targetAngle,
       ) {
-        final joint1 = pose.landmarks[type1]!;
-        final joint2 = pose.landmarks[type2]!;
-        final joint3 = pose.landmarks[type3]!;
+        final a = pose.landmarks[pointA]!;
+        final b = pose.landmarks[pointB]!;
+        final c = pose.landmarks[pointC]!;
 
         final angle = calculateAngle(
-          Offset(joint1.x, joint1.y),
-          Offset(joint2.x, joint2.y),
-          Offset(joint3.x, joint3.y),
+          Offset(a.x, a.y),
+          Offset(b.x, b.y),
+          Offset(c.x, c.y),
         );
+
+        final isValid = (angle - targetAngle).abs() < 15;
 
         final paint = Paint()
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 3.0
-          ..color = (angle - referenceAngle).abs() < 15
-              ? Colors.green
-              : Colors.red;
+          ..strokeWidth = 3
+          ..color = isValid ? Colors.green : Colors.red;
 
-        canvas.drawLine(
-          Offset(
-            translateX(
-              joint1.x,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-            translateY(
-              joint1.y,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-          ),
-          Offset(
-            translateX(
-              joint2.x,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-            translateY(
-              joint2.y,
-              size,
-              imageSize,
-              rotation,
-              cameraLensDirection,
-            ),
-          ),
-          paint,
+        // Her zaman hem üst hem alt çizgi çizilir:
+        final aOffset = Offset(
+          translateX(a.x, size, imageSize, rotation, cameraLensDirection),
+          translateY(a.y, size, imageSize, rotation, cameraLensDirection),
         );
+        final bOffset = Offset(
+          translateX(b.x, size, imageSize, rotation, cameraLensDirection),
+          translateY(b.y, size, imageSize, rotation, cameraLensDirection),
+        );
+        final cOffset = Offset(
+          translateX(c.x, size, imageSize, rotation, cameraLensDirection),
+          translateY(c.y, size, imageSize, rotation, cameraLensDirection),
+        );
+
+        // 🔹 A-B (örneğin omuz–dirsek)
+        canvas.drawLine(aOffset, bOffset, paint);
+        // 🔹 B-C (örneğin dirsek–bilek)
+        canvas.drawLine(bOffset, cOffset, paint);
       }
 
-      // Sol kol
-      paintLineValidated(
+      // --- Kollar ---
+      paintJointLines(
         PoseLandmarkType.leftShoulder,
         PoseLandmarkType.leftElbow,
         PoseLandmarkType.leftWrist,
         defaultPose.leftElbowAngle,
       );
-      // Sağ kol
-      paintLineValidated(
+
+      paintJointLines(
         PoseLandmarkType.rightShoulder,
         PoseLandmarkType.rightElbow,
         PoseLandmarkType.rightWrist,
         defaultPose.rightElbowAngle,
       );
-      // Sol bacak
-      paintLineValidated(
+
+      // --- Bacaklar ---
+      paintJointLines(
         PoseLandmarkType.leftHip,
         PoseLandmarkType.leftKnee,
         PoseLandmarkType.leftAnkle,
         defaultPose.leftKneeAngle,
       );
-      // Sağ bacak
-      paintLineValidated(
+
+      paintJointLines(
         PoseLandmarkType.rightHip,
         PoseLandmarkType.rightKnee,
         PoseLandmarkType.rightAnkle,
