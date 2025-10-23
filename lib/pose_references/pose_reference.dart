@@ -15,6 +15,13 @@ class PoseReference {
 final defaultPose = PoseReference(
   leftElbowAngle: 160,
   rightElbowAngle: 160,
-  leftKneeAngle: 170,
-  rightKneeAngle: 170,
+  leftKneeAngle: 180,
+  rightKneeAngle: 180,
+);
+
+final warriorPose = PoseReference(
+  leftElbowAngle: 180, // kollar düz
+  rightElbowAngle: 180,
+  leftKneeAngle: 90, // ön bacak
+  rightKneeAngle: 175, // arka bacak
 );

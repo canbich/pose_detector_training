@@ -1,4 +1,7 @@
+import 'package:approx_pilates_demo/pose_references/pose_reference.dart';
+import 'package:approx_pilates_demo/widgets/ema.dart';
 import 'package:approx_pilates_demo/widgets/pose_painter.dart';
+import 'package:approx_pilates_demo/widgets/pose_validators.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +10,8 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 import 'detector_view.dart';
 
 class PoseDetectorView extends StatefulWidget {
-  const PoseDetectorView({super.key});
+  final PoseReference poseReference;
+  const PoseDetectorView({super.key, required this.poseReference});
 
   @override
   State<StatefulWidget> createState() => _PoseDetectorViewState();
@@ -62,7 +66,10 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         inputImage.metadata!.size,
         inputImage.metadata!.rotation,
         _cameraLensDirection,
-        _emaMap, // EMA map’i burada geçiriyoruz
+        _emaMap,
+        widget.poseReference == defaultPose
+            ? defaultPoseValidator
+            : warriorPoseValidator,
       );
       _customPaint = CustomPaint(painter: painter);
     } else {

@@ -1,5 +1,6 @@
 import 'package:approx_pilates_demo/pages/exercise/exercise_screen.dart';
 import 'package:approx_pilates_demo/pages/home/home_screen.dart';
+import 'package:approx_pilates_demo/pose_references/pose_reference.dart';
 import 'package:flutter/material.dart';
 
 class AppRouter {
@@ -12,8 +13,21 @@ class AppRouter {
     switch (settings.name) {
       case home:
         return MaterialPageRoute(builder: (_) => const HomeScreen());
+
       case exercise:
-        return MaterialPageRoute(builder: (_) => const ExerciseScreen());
+        final args = settings.arguments;
+
+        if (args is PoseReference) {
+          return MaterialPageRoute(
+            builder: (_) => ExerciseScreen(poseReference: args),
+          );
+        }
+
+        // 🔹 Argüman yoksa default pozu kullan
+        return MaterialPageRoute(
+          builder: (_) => ExerciseScreen(poseReference: defaultPose),
+        );
+
       default:
         return MaterialPageRoute(
           builder: (_) => const Scaffold(
