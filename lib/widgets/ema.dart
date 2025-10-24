@@ -1,7 +1,7 @@
 class EMA {
   double value;
   final double alpha;
-  EMA({required this.value, this.alpha = 0.1});
+  EMA({required this.value, this.alpha = 0.2});
 
   double update(double newValue) {
     value = alpha * newValue + (1 - alpha) * value;

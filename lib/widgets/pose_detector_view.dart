@@ -61,7 +61,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
 
     if (inputImage.metadata?.size != null &&
         inputImage.metadata?.rotation != null) {
-      final painter = PosePainter(
+      final painter = FullBodyPosePainter(
         poses,
         inputImage.metadata!.size,
         inputImage.metadata!.rotation,
